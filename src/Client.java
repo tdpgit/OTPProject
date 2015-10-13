@@ -15,8 +15,8 @@ public class Client {
         //try to set values through args
         try {
             portno = Integer.parseInt(args[0]);
-            otpkey = DatatypeConverter.parseHexBinary(args[1]);
-            hostaddress = args[2];
+            hostaddress = args[1];
+            otpkey = DatatypeConverter.parseHexBinary(args[2]);
             message = args[3];
             for(int i = 4; i < args.length; i++) {
                 message = message + " " + args[i];
