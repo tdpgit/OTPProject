@@ -37,7 +37,9 @@ public class Client {
             final byte[] decodedMessage = message.getBytes();
             final byte[] encoded = new byte[decodedMessage.length];
             final byte[] key = new byte[decodedMessage.length];
-            new SecureRandom(otpkey).nextBytes(key);
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed(otpkey);
+            sr.nextBytes(key);
             for(int i = 0; i < decodedMessage.length; i++) {
                 encoded[i] = (byte)(decodedMessage[i] ^ key[i]);
             }

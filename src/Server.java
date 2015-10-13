@@ -87,7 +87,9 @@ class ProxyThread extends Thread {
             //decode message
             final byte[] decoded = new byte[encodedMessage.length];
             final byte[] key = new byte[encodedMessage.length];
-            new SecureRandom(otpkey).nextBytes(key);
+            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
+            sr.setSeed(otpkey);
+            sr.nextBytes(key);
             for(int i = 0; i < encodedMessage.length; i++) {
                 decoded[i] = (byte)(encodedMessage[i] ^ key[i]);
             }
