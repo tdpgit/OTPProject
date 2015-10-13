@@ -67,7 +67,8 @@ class ProxyThread extends Thread {
                 }
             }
 //            is.read(messageLength, 0, messageLength.length);
-            int holdLength = ByteBuffer.wrap(messageLengthHolder.toByteArray()).getInt();
+            messageLength = messageLengthHolder.toByteArray();
+            int holdLength = ByteBuffer.wrap(messageLength).getInt();
             System.out.println("Message Length: " + holdLength);
 
             //find rest of message
@@ -78,16 +79,10 @@ class ProxyThread extends Thread {
 
                 if(encodedMessageHolder.toByteArray().length == holdLength) {
                     break;
-                } else if(encodedMessageHolder.toByteArray().length == holdLength) {
-                    //length of message is longer than expected
-                    System.out.println("To many characters closing socket.");
-                    socket.close();
-                    return;
                 }
             }
-//            is.read(encodedMessage, 0, holdLength);
+            //            is.read(encodedMessage, 0, holdLength);
             encodedMessage = encodedMessageHolder.toByteArray();
-            System.out.println("The encoded string: " + new String(encodedMessage));
 
             //decode message
             final byte[] decoded = new byte[encodedMessage.length];
@@ -96,12 +91,11 @@ class ProxyThread extends Thread {
             for(int i = 0; i < encodedMessage.length; i++) {
                 decoded[i] = (byte)(encodedMessage[i] ^ key[i]);
             }
-            System.out.println("The decoded message: " + new String(decoded));
 
             //confirm the message was recieved
-            OutputStream os = socket.getOutputStream();
-            String returnMessage = "I got the message.";
-            os.write(returnMessage.getBytes(), 0, returnMessage.getBytes().length);
+//            OutputStream os = socket.getOutputStream();
+//            String returnMessage = "I got the message.";
+//            os.write(returnMessage.getBytes(), 0, returnMessage.getBytes().length);
 
             //close socket
             System.out.println("Close Socket.");

@@ -18,6 +18,9 @@ public class Client {
             otpkey = DatatypeConverter.parseHexBinary(args[1]);
             hostaddress = args[2];
             message = args[3];
+            for(int i = 4; i < args.length; i++) {
+                message = message + " " + args[i];
+            }
         } catch (Exception e) {
             //use defaults
         }
@@ -38,11 +41,9 @@ public class Client {
             for(int i = 0; i < decodedMessage.length; i++) {
                 encoded[i] = (byte)(decodedMessage[i] ^ key[i]);
             }
-            System.out.println("Encoded Message: " + new String(encoded));
 
             //get length of encoded
             int encodedLength = encoded.length;
-            System.out.println("Length of Encoded: " + encodedLength);
 
             //add length to message to send
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -53,21 +54,21 @@ public class Client {
             //send message to server
             OutputStream os = socket.getOutputStream();
             os.write(sendMessage, 0, sendMessage.length);
+            System.out.println("Send message: " + message);
+//            //wait for confirmation
+//            boolean waiting = true;
+//            InputStream is = socket.getInputStream();
+//            byte[] fromServer = new byte[18];
+//            ByteArrayOutputStream serverMessage = new ByteArrayOutputStream();
+//            int readSize;
+//            while((readSize = is.read(fromServer, 0, fromServer.length)) > 0) {
+//                serverMessage.write(fromServer, 0, readSize);
+//                if((new String(serverMessage.toByteArray()) == "I got the message.") || readSize == -1) {
+//                    waiting = false;
+//                }
+//            }
 
-            //wait for confirmation
-            boolean waiting = true;
-            InputStream is = socket.getInputStream();
-            byte[] fromServer = new byte[18];
-            ByteArrayOutputStream serverMessage = new ByteArrayOutputStream();
-            int readSize;
-            while((readSize = is.read(fromServer, 0, fromServer.length)) > 0) {
-                serverMessage.write(fromServer, 0, readSize);
-                if(new String(serverMessage.toByteArray()) == "I got the message.") {
-                    waiting = false;
-                }
-            }
-
-            System.out.println("Server: " + new String(serverMessage.toByteArray()));
+//            System.out.println("Server: " + new String(serverMessage.toByteArray()));
             System.out.println("Ending Connection.");
             socket.close();
 
