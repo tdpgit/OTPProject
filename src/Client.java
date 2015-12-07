@@ -1,12 +1,30 @@
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.x9.DHPublicKey;
+import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
+import org.bouncycastle.crypto.CipherParameters;
+import org.bouncycastle.crypto.agreement.DHBasicAgreement;
+import org.bouncycastle.crypto.generators.DHBasicKeyPairGenerator;
+import org.bouncycastle.crypto.generators.DHKeyPairGenerator;
+import org.bouncycastle.crypto.generators.DHParametersGenerator;
+import org.bouncycastle.crypto.params.DHKeyGenerationParameters;
+import org.bouncycastle.crypto.params.DHParameters;
+import org.bouncycastle.crypto.params.DHPublicKeyParameters;
+import org.bouncycastle.jcajce.provider.util.AsymmetricAlgorithmProvider;
+
+import javax.crypto.KeyAgreement;
 import javax.xml.bind.DatatypeConverter;
 import java.io.*;
+import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.security.SecureRandom;
+import java.security.*;
 
 public class Client {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+
+
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
+
         int portno = 3000;
         byte[] otpkey = {(byte)0xAA,(byte)0xAA, (byte)0xAA, (byte)0xAA};
         String hostaddress = "localhost";
@@ -27,50 +45,59 @@ public class Client {
 
         //try connecting to server
         try {
-            //get ipaddress
+            //get ip address
             InetAddress address = InetAddress.getByName(hostaddress);
 
             //create socket
             Socket socket = new Socket(address, portno);
 
-            //encode message
-            final byte[] decodedMessage = message.getBytes();
-            final byte[] encoded = new byte[decodedMessage.length];
-            final byte[] key = new byte[decodedMessage.length];
-            SecureRandom sr = SecureRandom.getInstance("SHA1PRNG");
-            sr.setSeed(otpkey);
-            sr.nextBytes(key);
-            for(int i = 0; i < decodedMessage.length; i++) {
-                encoded[i] = (byte)(decodedMessage[i] ^ key[i]);
-            }
+            //key generator
+            SecureRandom secureRandom = new SecureRandom();
+            DHParametersGenerator dhParametersGenerator = new DHParametersGenerator();
+            dhParametersGenerator.init(512, 100, secureRandom);
 
-            //get length of encoded
-            int encodedLength = encoded.length;
+            DHParameters dhParameters = dhParametersGenerator.generateParameters();
 
-            //add length to message to send
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            baos.write(ByteBuffer.allocate(4).putInt(encodedLength).array());
-            baos.write(encoded);
-            byte[] sendMessage = baos.toByteArray();
+            DHBasicKeyPairGenerator dhBasicKeyPairGenerator = new DHBasicKeyPairGenerator();
+            DHKeyGenerationParameters dhKeyGenerationParameters = new DHKeyGenerationParameters(secureRandom,
+                    dhParameters);
+            dhBasicKeyPairGenerator.init(dhKeyGenerationParameters);
 
-            //send message to server
-            OutputStream os = socket.getOutputStream();
-            os.write(sendMessage, 0, sendMessage.length);
-            System.out.println("Send message: " + message);
-//            //wait for confirmation
-//            boolean waiting = true;
-//            InputStream is = socket.getInputStream();
-//            byte[] fromServer = new byte[18];
-//            ByteArrayOutputStream serverMessage = new ByteArrayOutputStream();
-//            int readSize;
-//            while((readSize = is.read(fromServer, 0, fromServer.length)) > 0) {
-//                serverMessage.write(fromServer, 0, readSize);
-//                if((new String(serverMessage.toByteArray()) == "I got the message.") || readSize == -1) {
-//                    waiting = false;
-//                }
-//            }
+            AsymmetricCipherKeyPair asymmetricCipherKeyPair =  dhBasicKeyPairGenerator.generateKeyPair();
 
-//            System.out.println("Server: " + new String(serverMessage.toByteArray()));
+            DHPublicKeyParameters dhPublicKeyParameters = (DHPublicKeyParameters)asymmetricCipherKeyPair.getPublic();
+
+            DHBasicAgreement dhBasicAgreement = new DHBasicAgreement();
+            dhBasicAgreement.init(asymmetricCipherKeyPair.getPrivate());
+
+
+            //create packet
+            SecurePacket securePacket = new SecurePacket();
+            securePacket.packetType = 1;
+            securePacket.sequenceNumber = 0;
+            securePacket.publicKey = dhPublicKeyParameters.getY().toByteArray();
+            BigInteger bigInteger = new BigInteger(securePacket.publicKey);
+            System.out.println(bigInteger);
+            securePacket.prime = dhParameters.getP().toByteArray();
+            securePacket.base = dhParameters.getG().toByteArray();
+
+            ASN1OutputStream out = new ASN1OutputStream(socket.getOutputStream());
+            out.writeObject(securePacket.toASN1Primitive());
+
+            System.out.println("Sent packet");
+
+            ASN1InputStream asn1InputStream = new ASN1InputStream(socket.getInputStream());
+            DLSequence dlSequence = (DLSequence)asn1InputStream.readObject();
+
+            DERBitString derBitString = (DERBitString)dlSequence.getObjectAt(2);
+            BigInteger publicKey = new BigInteger(derBitString.getBytes());
+
+            DHPublicKeyParameters serverKey = new DHPublicKeyParameters(publicKey, dhParameters);
+
+            BigInteger agreement = dhBasicAgreement.calculateAgreement(serverKey);
+
+            System.out.println("agreement:" + agreement);
+
             System.out.println("Ending Connection.");
             socket.close();
 
