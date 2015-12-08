@@ -57,7 +57,7 @@ class ServerThread extends Thread {
 
                 //check packet type
                 ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
-                if (packetType.equals(BigInteger.valueOf(1))) {
+                if (packetType.equals(BigInteger.ONE)) {
                     try {
                         sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
                         encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);

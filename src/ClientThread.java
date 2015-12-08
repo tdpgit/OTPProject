@@ -30,8 +30,29 @@ public class ClientThread extends Thread {
         this.password = password;
     }
 
-    private void sendPacket(SecurePacket securePacket, byte[] sharedKey, byte[] encryptionKey) {
+    private void sendPacket(SecurePacket securePacket, BigInteger sharedKey, byte[] encryptionKey) throws Exception {
+        //create FinalPacket
+        FinalPacket finalPacket = new FinalPacket();
+        finalPacket.message = securePacket.toASN1Primitive().getEncoded("DER");
 
+        //get integrity hash
+        byte[] integrityHash = EncryptionHelper.createHashIntegrity(finalPacket.message, sharedKey.toByteArray());
+        System.out.println("hashintegrity: " + integrityHash);
+
+        //add to final packet
+        finalPacket.integrityHash = integrityHash;
+
+        //combine key and hash integrity
+        byte[] finalData = finalPacket.getCombinedData();
+
+        //get encrypted message
+        byte[] encryptedData = EncryptionHelper.encryptAndDecryptMessage(finalData, encryptionKey,
+                true);
+        System.out.println("encrypted message: " + encryptedData);
+
+        System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
+        socket.getOutputStream().write(encryptedData.length);
+        socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
     }
 
     public void run() {
@@ -64,56 +85,25 @@ public class ClientThread extends Thread {
                 securePacket.base = new byte[0];
                 securePacket.prime = new byte[0];
 
-                boolean sendPacket = true;
                 //check task to perform
                 if (command.equals("send")) {
                     System.out.print("Enter message: ");
                     String message = scanner.next();
                     securePacket.packetType = 2;
                     securePacket.data = message.getBytes();
+                    sendPacket(securePacket, sharedKey, encryptionKey);
                 } else if (command.equals("rekey")){
                     securePacket.packetType = 1;
                     securePacket.data = new byte[0];
-                } else {
-                    sendPacket = false;
-                    System.out.println("Unrecognized command. Try again.");
-                }
-
-                if (sendPacket) {
-                    //create FinalPacket
-                    FinalPacket finalPacket = new FinalPacket();
-                    finalPacket.message = securePacket.toASN1Primitive().getEncoded("DER");
-
-                    //get integrity hash
-                    byte[] integrityHash = EncryptionHelper.createHashIntegrity(finalPacket.message, sharedKey.toByteArray());
-                    System.out.println("hashintegrity: " + integrityHash);
-
-                    //add to final packet
-                    finalPacket.integrityHash = integrityHash;
-
-                    //combine key and hash integrity
-                    byte[] finalData = finalPacket.getCombinedData();
-
-                    //get encrypted message
-                    byte[] encryptedData = EncryptionHelper.encryptAndDecryptMessage(finalData, encryptionKey,
-                            true);
-                    System.out.println("encrypted message: " + encryptedData);
-
-                    System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
-                    socket.getOutputStream().write(encryptedData.length);
-                    socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
-
-                    if (command.equals("rekey")) {
-                        try {
-                            sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
-                            encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-                        } catch (Exception e) {
-                            System.out.println("Rekey failed.");
-                        }
+                    sendPacket(securePacket, sharedKey, encryptionKey);
+                    try {
+                        sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
+                        encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-
                 } else {
-                    //invalid command have user reenter
+                    System.out.println("Unrecognized command. Try again.");
                 }
             }
 
