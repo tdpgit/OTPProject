@@ -42,6 +42,8 @@ public class ClientThread extends Thread {
             securePacket.packetType = 2;
             securePacket.sequenceNumber = 0;
             securePacket.data = message.getBytes();
+            securePacket.base = new byte[0];
+            securePacket.prime = new byte[0];
 
             //create FinalPacket
             FinalPacket finalPacket = new FinalPacket();
@@ -66,6 +68,7 @@ public class ClientThread extends Thread {
                     true);
             System.out.println("encrypted message: " + encryptedData);
 
+            System.out.println("size: " + finalPacket.getSize());
             socket.getOutputStream().write(finalPacket.getSize());
             socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
 

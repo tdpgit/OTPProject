@@ -33,11 +33,12 @@ class ServerThread extends Thread {
 
             //get encryption key
             byte[] encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-            System.out.println("ecryption key: " + encryptionKey);
+            System.out.println("encryption key: " + encryptionKey);
 
             //get encrypted message
             int size = socket.getInputStream().read();
-            byte[] encryptedMessage = new byte[32];
+            System.out.println("size: " + size);
+            byte[] encryptedMessage = new byte[size];
             socket.getInputStream().read(encryptedMessage, 0, size);
 
             //decrypt the message
