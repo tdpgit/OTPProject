@@ -13,6 +13,7 @@ import org.bouncycastle.crypto.params.DHPublicKeyParameters;
 import java.math.BigInteger;
 import java.net.Socket;
 import java.security.SecureRandom;
+import java.util.Scanner;
 
 /**
  * Created by Trevor on 12/7/15.
@@ -20,63 +21,111 @@ import java.security.SecureRandom;
 public class ClientThread extends Thread {
     private String host;
     private int port;
-    private String message = "I love fries";
-    private String password = "shared";
+    private String password;
     private Socket socket;
 
-    public ClientThread(String host, int port) {
+    public ClientThread(String host, int port, String password) {
         this.host = host;
         this.port = port;
+        this.password = password;
+    }
+
+    private void sendPacket(SecurePacket securePacket, byte[] sharedKey, byte[] encryptionKey) {
+
     }
 
     public void run() {
         try {
             socket = new Socket(host, port);
 
+            System.out.println("Perform Key Exchange.");
+
             //get shared key
             BigInteger sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
             System.out.println("agreement:" + sharedKey);
-
-            //create secure packet
-            SecurePacket securePacket = new SecurePacket();
-            securePacket.packetType = 2;
-            securePacket.sequenceNumber = 0;
-            securePacket.data = message.getBytes();
-            securePacket.base = new byte[0];
-            securePacket.prime = new byte[0];
-
-            //create FinalPacket
-            FinalPacket finalPacket = new FinalPacket();
-            finalPacket.message = securePacket.toASN1Primitive().getEncoded("DER");
-
-            //get integrity hash
-            byte[] integrityHash = EncryptionHelper.createHashIntegrity(finalPacket.message, sharedKey.toByteArray());
-            System.out.println("hashintegrity: " + integrityHash);
-
-            //add to final packet
-            finalPacket.integrityHash = integrityHash;
-
-            //combine key and hash integrity
-            byte[] finalData = finalPacket.getCombinedData();
 
             //get aes encryption key
             byte[] encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
             System.out.println("encryption key: " + encryptionKey);
 
-            //get encrypted message
-            byte[] encryptedData = EncryptionHelper.encryptAndDecryptMessage(finalData, encryptionKey,
-                    true);
-            System.out.println("encrypted message: " + encryptedData);
+            boolean clientConnected = true;
+            while (clientConnected) {
 
-            System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
-            socket.getOutputStream().write(encryptedData.length);
-            socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
+                //request command
+                System.out.print("Enter \"send\" or \"rekey\" command: ");
+                Scanner scanner = new Scanner(System.in);
+                String command = scanner.next();
 
-            System.out.println("Ending Connection.");
-            socket.close();
+                //create secure packet
+                SecurePacket securePacket = new SecurePacket();
+                securePacket.packetType = 2;
+                securePacket.data = "I love fries".getBytes();
+                securePacket.sequenceNumber = 0;
+                securePacket.base = new byte[0];
+                securePacket.prime = new byte[0];
+
+                boolean sendPacket = true;
+                //check task to perform
+                if (command.equals("send")) {
+                    System.out.print("Enter message: ");
+                    String message = scanner.next();
+                    securePacket.packetType = 2;
+                    securePacket.data = message.getBytes();
+                } else if (command.equals("rekey")){
+                    securePacket.packetType = 1;
+                    securePacket.data = new byte[0];
+                } else {
+                    sendPacket = false;
+                    System.out.println("Unrecognized command. Try again.");
+                }
+
+                if (sendPacket) {
+                    //create FinalPacket
+                    FinalPacket finalPacket = new FinalPacket();
+                    finalPacket.message = securePacket.toASN1Primitive().getEncoded("DER");
+
+                    //get integrity hash
+                    byte[] integrityHash = EncryptionHelper.createHashIntegrity(finalPacket.message, sharedKey.toByteArray());
+                    System.out.println("hashintegrity: " + integrityHash);
+
+                    //add to final packet
+                    finalPacket.integrityHash = integrityHash;
+
+                    //combine key and hash integrity
+                    byte[] finalData = finalPacket.getCombinedData();
+
+                    //get encrypted message
+                    byte[] encryptedData = EncryptionHelper.encryptAndDecryptMessage(finalData, encryptionKey,
+                            true);
+                    System.out.println("encrypted message: " + encryptedData);
+
+                    System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
+                    socket.getOutputStream().write(encryptedData.length);
+                    socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
+
+                    if (command.equals("rekey")) {
+                        try {
+                            sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
+                            encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                        } catch (Exception e) {
+                            System.out.println("Rekey failed.");
+                        }
+                    }
+
+                } else {
+                    //invalid command have user reenter
+                }
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try {
+                System.out.println("Ending Connection.");
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 

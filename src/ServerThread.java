@@ -13,10 +13,11 @@ import java.util.Arrays;
  */
 class ServerThread extends Thread {
     private Socket socket;
-    private String password = "shared";
+    private String password;
 
-    public ServerThread(Socket socket) {
+    public ServerThread(Socket socket, String password) {
         this.socket = socket;
+        this.password = password;
     }
 
 
@@ -27,6 +28,8 @@ class ServerThread extends Thread {
             //use bouncy castle
             Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
+            System.out.println("Perform key exchange.");
+
             //get shared key
             BigInteger sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
             System.out.println("agreement: " + sharedKey);
@@ -35,36 +38,47 @@ class ServerThread extends Thread {
             byte[] encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
             System.out.println("encryption key: " + encryptionKey);
 
-            //get encrypted message
-            int size = socket.getInputStream().read();
-            System.out.println("size: " + size);
-            byte[] encryptedMessage = new byte[size];
-            socket.getInputStream().read(encryptedMessage, 0, size);
-            System.out.println("encrypted message: " + encryptedMessage);
-            //decrypt the message
-            byte[] decryptedMessage = EncryptionHelper.encryptAndDecryptMessage(encryptedMessage, encryptionKey, false);
-            System.out.println("encrypted message: " + decryptedMessage);
+            boolean clientConnected = true;
+            while (clientConnected) {
+                //get encrypted message
+                int size = socket.getInputStream().read();
+                System.out.println("size: " + size);
+                byte[] encryptedMessage = new byte[size];
+                socket.getInputStream().read(encryptedMessage, 0, size);
+                System.out.println("encrypted message: " + encryptedMessage);
+                //decrypt the message
+                byte[] decryptedMessage = EncryptionHelper.encryptAndDecryptMessage(encryptedMessage, encryptionKey, false);
+                System.out.println("encrypted message: " + decryptedMessage);
 
-            //find the integrity hash
-            DLSequence dlSequence = (DLSequence)ASN1Primitive.fromByteArray(decryptedMessage);
-            byte[] hash = Arrays.copyOfRange(decryptedMessage, dlSequence.getEncoded().length,
-                    decryptedMessage.length);
+                //find the integrity hash
+                DLSequence dlSequence = (DLSequence)ASN1Primitive.fromByteArray(decryptedMessage);
+                byte[] hash = Arrays.copyOfRange(decryptedMessage, dlSequence.getEncoded().length,
+                        decryptedMessage.length);
 
-            //check packet type
-            ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
-            if (packetType.equals(BigInteger.valueOf(1))) {
-
-            } else {
-                System.out.println("The impossible" + new String(dlSequence.getObjectAt(2).toASN1Primitive().getEncoded()));
+                //check packet type
+                ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
+                if (packetType.equals(BigInteger.valueOf(1))) {
+                    try {
+                        sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
+                        encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    System.out.println("The impossible" + new String(dlSequence.getObjectAt(2).toASN1Primitive().getEncoded()));
+                }
             }
-
-            //close socket
-            System.out.println("Close Socket.");
-
-            socket.close();
 
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            //close socket
+            System.out.println("Close Socket.");
+            try {
+                socket.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }
