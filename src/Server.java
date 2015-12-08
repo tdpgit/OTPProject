@@ -34,7 +34,6 @@ public class Server {
 
         try {
             cmdLineParser.parseArgument(args);
-            System.out.println("args = " + serverArguments.port + " " + serverArguments.passphrase);
         } catch (Exception e) {
             System.out.println("Failed to read arguments.\n" +
                     "Need -p (port number) -P (\"passphrase\"\\nMake sure passphrase is in quotations\"");

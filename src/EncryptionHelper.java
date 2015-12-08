@@ -22,6 +22,8 @@ public class EncryptionHelper {
         SecureRandom secureRandom = new SecureRandom(sharedPassword);
         BigInteger nonce = new BigInteger(256, secureRandom);  //create nonce
 
+        System.out.println("Nonce: " + nonce);
+
         //combine nonce and shared key
         ByteArrayOutputStream combinedKey = new ByteArrayOutputStream();
         combinedKey.write(nonce.toByteArray());

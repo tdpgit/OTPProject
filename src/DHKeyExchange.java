@@ -19,14 +19,19 @@ import java.security.SecureRandom;
  */
 public class DHKeyExchange {
 
+    private static DHParameters dhParameters = null;
+
     public static BigInteger serverDHKeyExchange(Socket socket) throws Exception {
         SecureRandom secureRandom = new SecureRandom();
-        //generator for prime mod and base generator
-        DHParametersGenerator dhParametersGenerator = new DHParametersGenerator();
-        dhParametersGenerator.init(512, 100, secureRandom);
 
-        //generate mod and base
-        DHParameters dhParameters = dhParametersGenerator.generateParameters();
+        if (dhParameters == null) {
+            //generator for prime mod and base generator
+            DHParametersGenerator dhParametersGenerator = new DHParametersGenerator();
+            dhParametersGenerator.init(1024, 100, secureRandom);
+
+            //generate mod and base
+            dhParameters = dhParametersGenerator.generateParameters();
+        }
 
         //key pair generator
         DHBasicKeyPairGenerator dhBasicKeyPairGenerator = new DHBasicKeyPairGenerator();

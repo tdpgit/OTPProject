@@ -98,8 +98,10 @@ public class ClientThread extends Thread {
                     securePacket.data = new byte[0];
                     sendPacket(securePacket, sharedKey, encryptionKey);
                     try {
+                        System.out.println("Generate new keys...");
                         sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
                         encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                        System.out.println("new shared key: " + sharedKey + "new encryption key: " + encryptionKey);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

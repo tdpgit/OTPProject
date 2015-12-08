@@ -61,8 +61,10 @@ class ServerThread extends Thread {
                 System.out.println("Packet type: " + packetType);
                 if (packetType.getValue().equals(BigInteger.ONE)) {
                     try {
+                        System.out.println("Generate new keys...");
                         sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
                         encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                        System.out.println("new shared key: " + sharedKey + "new encryption key: " + encryptionKey);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
