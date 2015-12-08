@@ -1,6 +1,7 @@
 
 import org.bouncycastle.asn1.ASN1Integer;
 import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.DERBitString;
 import org.bouncycastle.asn1.DLSequence;
 
 import java.math.BigInteger;
@@ -57,7 +58,8 @@ class ServerThread extends Thread {
 
                 //check packet type
                 ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
-                if (packetType.equals(BigInteger.ONE)) {
+                System.out.println("Packet type: " + packetType);
+                if (packetType.getValue().equals(BigInteger.ONE)) {
                     try {
                         sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
                         encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
@@ -65,7 +67,7 @@ class ServerThread extends Thread {
                         e.printStackTrace();
                     }
                 } else {
-                    System.out.println("The impossible" + new String(dlSequence.getObjectAt(2).toASN1Primitive().getEncoded()));
+                    System.out.println("Message: " + new String(((DERBitString)dlSequence.getObjectAt(2)).getBytes()));
                 }
             }
 

@@ -50,7 +50,7 @@ public class ClientThread extends Thread {
                 true);
         System.out.println("encrypted message: " + encryptedData);
 
-        System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
+        System.out.println("size: "  + encryptedData.length);
         socket.getOutputStream().write(encryptedData.length);
         socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
     }
@@ -88,7 +88,8 @@ public class ClientThread extends Thread {
                 //check task to perform
                 if (command.equals("send")) {
                     System.out.print("Enter message: ");
-                    String message = scanner.next();
+                    scanner = new Scanner(System.in);
+                    String message = scanner.nextLine();
                     securePacket.packetType = 2;
                     securePacket.data = message.getBytes();
                     sendPacket(securePacket, sharedKey, encryptionKey);

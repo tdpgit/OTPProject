@@ -10,11 +10,6 @@ public class FinalPacket  {
     public byte[] message;
     public byte[] integrityHash;
 
-    public int getSize() {
-        size = message.length + integrityHash.length;
-        return size;
-    }
-
     public byte[] getCombinedData() throws Exception {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         byteArrayOutputStream.write(message);
