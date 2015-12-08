@@ -12,15 +12,5 @@ public class Client {
 
         new ClientThread(hostaddress, portno).start();
 
-        //try to set values through args
-//        try {
-//            portno = Integer.parseInt(args[0]);
-//            hostaddress = args[1];
-//
-//        } catch (Exception e) {
-//            //use defaults
-//        }
-
-
     }
 }

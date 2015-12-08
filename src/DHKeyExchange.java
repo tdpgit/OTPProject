@@ -19,7 +19,7 @@ import java.security.SecureRandom;
  */
 public class DHKeyExchange {
 
-    public static BigInteger clientDHKeyExchange(Socket socket) throws Exception {
+    public static BigInteger serverDHKeyExchange(Socket socket) throws Exception {
         SecureRandom secureRandom = new SecureRandom();
         //generator for prime mod and base generator
         DHParametersGenerator dhParametersGenerator = new DHParametersGenerator();
@@ -47,7 +47,7 @@ public class DHKeyExchange {
         SecurePacket securePacket = new SecurePacket();
         securePacket.packetType = 1;
         securePacket.sequenceNumber = 0;
-        securePacket.publicKey = dhPublicKeyParameters.getY().toByteArray();
+        securePacket.data = dhPublicKeyParameters.getY().toByteArray();
         securePacket.prime = dhParameters.getP().toByteArray();
         securePacket.base = dhParameters.getG().toByteArray();
 
@@ -69,7 +69,7 @@ public class DHKeyExchange {
         return dhBasicAgreement.calculateAgreement(serverKey);
     }
 
-    public static BigInteger serverDHKeyExchange(Socket socket) throws Exception {
+    public static BigInteger clientDHKeyExchange(Socket socket) throws Exception {
         //recieve public key, mod, and base from client
         ASN1InputStream in = new ASN1InputStream(socket.getInputStream());
         DLSequence dlSequence = (DLSequence)in.readObject();
@@ -105,7 +105,7 @@ public class DHKeyExchange {
         DHPublicKeyParameters dhPublicKeyParameters = (DHPublicKeyParameters)asymmetricCipherKeyPair.getPublic();
         securePacket.sequenceNumber = 0;
         securePacket.packetType = 1;
-        securePacket.publicKey = dhPublicKeyParameters.getY().toByteArray();
+        securePacket.data = dhPublicKeyParameters.getY().toByteArray();
         securePacket.base = new byte[0];
         securePacket.prime = new byte[0];
 

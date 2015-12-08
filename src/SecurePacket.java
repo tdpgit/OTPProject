@@ -9,13 +9,13 @@ import java.io.Serializable;
 public class SecurePacket implements ASN1Encodable  {
     int packetType;
     int sequenceNumber;
-    byte[] publicKey;
+    byte[] data;
     byte[] prime;
     byte[] base;
 
     @Override
     public ASN1Primitive toASN1Primitive() {
         return new DERSequence(new ASN1Encodable[]{new ASN1Integer(packetType), new ASN1Integer(sequenceNumber),
-                new DERBitString(publicKey), new DERBitString(prime), new DERBitString(base)});
+                new DERBitString(data), new DERBitString(prime), new DERBitString(base)});
     }
 }

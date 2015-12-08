@@ -11,13 +11,6 @@ public class Server {
 
         boolean serverRunning = true;
         int portno = 3000;
-        //try to set port and otp
-//        try {
-//            portno = Integer.parseInt(args[0]);
-//            otpkey = DatatypeConverter.parseHexBinary(args[1]);
-//        } catch(Exception e) {
-//           //use defaults
-//        }
 
         try {
             //create socket
