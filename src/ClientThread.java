@@ -68,8 +68,8 @@ public class ClientThread extends Thread {
                     true);
             System.out.println("encrypted message: " + encryptedData);
 
-            System.out.println("size: " + finalPacket.getSize());
-            socket.getOutputStream().write(finalPacket.getSize());
+            System.out.println("size: " + finalPacket.getSize() + "other: "  + encryptedData.length);
+            socket.getOutputStream().write(encryptedData.length);
             socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
 
             System.out.println("Ending Connection.");

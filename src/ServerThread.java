@@ -40,7 +40,7 @@ class ServerThread extends Thread {
             System.out.println("size: " + size);
             byte[] encryptedMessage = new byte[size];
             socket.getInputStream().read(encryptedMessage, 0, size);
-
+            System.out.println("encrypted message: " + encryptedMessage);
             //decrypt the message
             byte[] decryptedMessage = EncryptionHelper.encryptAndDecryptMessage(encryptedMessage, encryptionKey, false);
             System.out.println("encrypted message: " + decryptedMessage);
@@ -51,11 +51,11 @@ class ServerThread extends Thread {
                     decryptedMessage.length);
 
             //check packet type
-            BigInteger packetType = (BigInteger)dlSequence.getObjectAt(0);
-            if (packetType == BigInteger.valueOf(1)) {
+            ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
+            if (packetType.equals(BigInteger.valueOf(1))) {
 
             } else {
-                System.out.println("The impossible" + dlSequence.getObjectAt(2));
+                System.out.println("The impossible" + new String(dlSequence.getObjectAt(2).toASN1Primitive().getEncoded()));
             }
 
             //close socket
