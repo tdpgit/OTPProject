@@ -1,0 +1,10 @@
+README
+
+1. place Client_jar and Server_jar2 on computers that the server and client must run on
+2. Enter into Server_jar2 - cd Server_jar2
+3. Run Server.jar - java -jar Server.jar -p (port number) -P (passphrase)
+    tip - passphrase can be placed in quotes to be longer than one word
+4. Enter Client_jar - cd Client_jar
+5. run Client.jar - java -jar Client.jar -p (port number) -t (hostname) -P (passphrase)
+6. use client application to enter either send or rekey command by typing related word
+    tip - if send is typed a new prompt will appear asking for message
