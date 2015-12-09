@@ -1,0 +1,15 @@
+<component name="ArtifactManager">
+  <artifact build-on-make="true" name="Server:jar2">
+    <output-path>$PROJECT_DIR$/out/artifacts/Server_jar2</output-path>
+    <root id="root">
+      <element id="archive" name="Server.jar">
+        <element id="directory" name="META-INF">
+          <element id="file-copy" path="$PROJECT_DIR$/src/Server/META-INF/MANIFEST.MF" />
+        </element>
+        <element id="module-output" name="OTPProject" />
+      </element>
+      <element id="file-copy" path="$PROJECT_DIR$/bcprov-ext-jdk15on-153.jar" />
+      <element id="file-copy" path="$PROJECT_DIR$/args4j-2.32.jar" />
+    </root>
+  </artifact>
+</component>
