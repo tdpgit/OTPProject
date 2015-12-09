@@ -15,11 +15,6 @@ public class SecurePacket implements ASN1Encodable  {
 
     @Override
     public ASN1Primitive toASN1Primitive() {
-        if (packetType == 1) {
-
-        } else {
-
-        }
         return new DERSequence(new ASN1Encodable[]{new ASN1Integer(packetType), new ASN1Integer(sequenceNumber),
                 new DERBitString(data), new DERBitString(prime), new DERBitString(base)});
     }

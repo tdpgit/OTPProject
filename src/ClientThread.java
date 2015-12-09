@@ -37,7 +37,6 @@ public class ClientThread extends Thread {
 
         //get integrity hash
         byte[] integrityHash = EncryptionHelper.createHashIntegrity(finalPacket.message, sharedKey.toByteArray());
-        System.out.println("hashintegrity: " + integrityHash);
 
         //add to final packet
         finalPacket.integrityHash = integrityHash;
@@ -48,9 +47,8 @@ public class ClientThread extends Thread {
         //get encrypted message
         byte[] encryptedData = EncryptionHelper.encryptAndDecryptMessage(finalData, encryptionKey,
                 true);
-        System.out.println("encrypted message: " + encryptedData);
 
-        System.out.println("size: "  + encryptedData.length);
+        //send length and encrypted data
         socket.getOutputStream().write(encryptedData.length);
         socket.getOutputStream().write(encryptedData, 0, encryptedData.length);
     }
@@ -59,15 +57,17 @@ public class ClientThread extends Thread {
         try {
             socket = new Socket(host, port);
 
-            System.out.println("Perform Key Exchange.");
+            System.out.println("Performing Key Exchange...");
 
             //get shared key
             BigInteger sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
-            System.out.println("agreement:" + sharedKey);
+            System.out.println("negotaited secret :" + sharedKey);
 
             //get aes encryption key
             byte[] encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-            System.out.println("encryption key: " + encryptionKey);
+
+            //start sequence count
+            int sequenceNumber = 0;
 
             boolean clientConnected = true;
             while (clientConnected) {
@@ -80,8 +80,8 @@ public class ClientThread extends Thread {
                 //create secure packet
                 SecurePacket securePacket = new SecurePacket();
                 securePacket.packetType = 2;
-                securePacket.data = "I love fries".getBytes();
-                securePacket.sequenceNumber = 0;
+                securePacket.data = "".getBytes();
+                securePacket.sequenceNumber = sequenceNumber;
                 securePacket.base = new byte[0];
                 securePacket.prime = new byte[0];
 
@@ -93,6 +93,7 @@ public class ClientThread extends Thread {
                     securePacket.packetType = 2;
                     securePacket.data = message.getBytes();
                     sendPacket(securePacket, sharedKey, encryptionKey);
+                    sequenceNumber += 1;
                 } else if (command.equals("rekey")){
                     securePacket.packetType = 1;
                     securePacket.data = new byte[0];
@@ -101,7 +102,8 @@ public class ClientThread extends Thread {
                         System.out.println("Generate new keys...");
                         sharedKey = DHKeyExchange.clientDHKeyExchange(socket);
                         encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-                        System.out.println("new shared key: " + sharedKey + "new encryption key: " + encryptionKey);
+                        sequenceNumber = 0;
+                        System.out.println("new shared key: " + sharedKey);
                     } catch (Exception e) {
                         e.printStackTrace();
                     }

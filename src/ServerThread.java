@@ -29,48 +29,56 @@ class ServerThread extends Thread {
             //use bouncy castle
             Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
-            System.out.println("Perform key exchange.");
+            System.out.println("Performing key exchange...");
 
             //get shared key
             BigInteger sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
-            System.out.println("agreement: " + sharedKey);
+            System.out.println("negotiated secret : " + sharedKey);
 
             //get encryption key
             byte[] encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-            System.out.println("encryption key: " + encryptionKey);
 
             boolean clientConnected = true;
+            int sequenceNumber = 0;
             while (clientConnected) {
                 //get encrypted message
                 int size = socket.getInputStream().read();
                 System.out.println("size: " + size);
                 byte[] encryptedMessage = new byte[size];
                 socket.getInputStream().read(encryptedMessage, 0, size);
-                System.out.println("encrypted message: " + encryptedMessage);
                 //decrypt the message
                 byte[] decryptedMessage = EncryptionHelper.encryptAndDecryptMessage(encryptedMessage, encryptionKey, false);
-                System.out.println("encrypted message: " + decryptedMessage);
 
                 //find the integrity hash
                 DLSequence dlSequence = (DLSequence)ASN1Primitive.fromByteArray(decryptedMessage);
                 byte[] hash = Arrays.copyOfRange(decryptedMessage, dlSequence.getEncoded().length,
                         decryptedMessage.length);
 
-                //check packet type
-                ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
-                System.out.println("Packet type: " + packetType);
-                if (packetType.getValue().equals(BigInteger.ONE)) {
-                    try {
-                        System.out.println("Generate new keys...");
-                        sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
-                        encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
-                        System.out.println("new shared key: " + sharedKey + "new encryption key: " + encryptionKey);
-                    } catch (Exception e) {
-                        e.printStackTrace();
+                //get sequence number
+                ASN1Integer packetNumber = (ASN1Integer)dlSequence.getObjectAt(1);
+
+                if (packetNumber.getValue().equals(BigInteger.valueOf(sequenceNumber))){
+                    //check packet type
+                    ASN1Integer packetType = (ASN1Integer)dlSequence.getObjectAt(0);
+                    System.out.println("Packet Sequence Number: " + packetNumber);
+                    if (packetType.getValue().equals(BigInteger.ONE)) {
+                        try {
+                            System.out.println("Generate new keys...");
+                            sharedKey = DHKeyExchange.serverDHKeyExchange(socket);
+                            encryptionKey = EncryptionHelper.createEncryptionKey(password.getBytes(), sharedKey);
+                            System.out.println("new shared key: " + sharedKey);
+                            sequenceNumber = 0;
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        sequenceNumber += 1;
+                        System.out.println("Message: " + new String(((DERBitString)dlSequence.getObjectAt(2)).getBytes()));
                     }
                 } else {
-                    System.out.println("Message: " + new String(((DERBitString)dlSequence.getObjectAt(2)).getBytes()));
+                    System.out.println("Incorrect sequence number.");
                 }
+
             }
 
         } catch (Exception e) {
